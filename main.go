@@ -31,7 +31,7 @@ func main() {
 	//user routes
 	r.HandleFunc("/api/users", controllers.GetUsers).Methods("GET")
 	r.HandleFunc("/api/users/signup", controllers.SignUp).Methods("POST")
-	// r.HandleFunc("/api/users/login", ).Methods("POST")
+	r.HandleFunc("/api/users/login", controllers.Login).Methods("POST")
 
 	// //places routes
 	r.HandleFunc("/api/places/user/{uid}", controllers.GetPlacesByUserID).Methods("GET")

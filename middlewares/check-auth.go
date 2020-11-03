@@ -19,7 +19,12 @@ func CheckAuth(next http.Handler) http.Handler {
 		UserID = ""
 		//urlからmatchしたものだけを適用する...
 		//これ以外の場合はauthorizationをcheckする
-		if ((r.Method == "GET") || (r.URL.String() == "/api/users/login") || (r.URL.String() == "/api/users/signup")) {
+		if r.Method == "OPTIONS" {
+			fmt.Println("OPTIONS")
+			w.WriteHeader(http.StatusOK)
+			return 
+		}
+		if ((r.Method == "GET") || (r.URL.String() == "/api/users/login") || (r.URL.String() == "/api/users/signup") ) {
 			fmt.Println("auth return")
 			next.ServeHTTP(w, r)
 			return

@@ -48,7 +48,7 @@ func SignUp (w http.ResponseWriter, r *http.Request) {
   var existingUser models.User
 	err := database.UserColl.FindOne(context.Background(), bson.D{{Key: "email", Value: email}}).Decode(&existingUser)
 	if err == nil {
-		json.NewEncoder(w).Encode(models.HTTPError{Message: "email is already using"})
+		util.ReturnWithErrJSON(w, "this email already useing", http.StatusBadRequest)
 	}
 	//password hash and insert database
 	h := hmac.New(sha256.New, []byte("mysecretkey"))
@@ -81,9 +81,51 @@ func SignUp (w http.ResponseWriter, r *http.Request) {
 }
 
 
-//Login .
+//Login . validation => user check for email => password check => create jwt and return json containg jwtToken 
 func Login (w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	//validation ....
+	var loginUser models.LoginUser
+	json.NewDecoder(r.Body).Decode(&loginUser)
+	if (loginUser.Email == "" || loginUser.Password == "" ) {
+		util.ReturnWithErrJSON(w, "invalid value", http.StatusBadRequest)
+    return 
+	}
+	//user check for email
+	var user models.UserContainPassword
+	result := database.UserColl.FindOne(context.Background(), bson.D{{Key: "email", Value: loginUser.Email}})
+  if err := result.Decode(&user); err != nil {
+		util.ReturnWithErrJSON(w, "user is not found.", http.StatusBadRequest)
+		return
+	}
+	//password check!
+	h := hmac.New(sha256.New, []byte("mysecretkey"))
+	h.Write([]byte(loginUser.Password))
+	hashedPassword := h.Sum(nil)
+	comperedPassword, err := hex.DecodeString(user.Password)
+	if err != nil {
+		util.Err(w, err, http.StatusInternalServerError)
+		return
+	}
+	if !hmac.Equal(hashedPassword, comperedPassword) {
+		util.ReturnWithErrJSON(w, "password is invalid.", http.StatusBadRequest)
+		return
+	}
 
+	//create JWT
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"userId": user.ID,
+		"email" : user.Email,
+		"exp"   : time.Now().Add(time.Hour).Unix(),
+	})
+	//add secret key
+	tokenString, err := token.SignedString([]byte("mysecretkey"))
+	if err != nil {
+		util.Err(w, err, http.StatusInternalServerError)
+		return
+	}
+	res := models.SignUpUser{UserID: user.ID, Email: user.Email, Token: tokenString}
+	json.NewEncoder(w).Encode(res)
 }
 
 

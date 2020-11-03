@@ -32,9 +32,25 @@ func GetPlacesByUserID(w http.ResponseWriter, r *http.Request) {
     util.Err(w, err, http.StatusNotFound)
 		return
 	}
-	if err = cur.All(context.TODO(), &places.Places); err != nil {
-		util.Err(w, err, http.StatusInternalServerError)
-		return 
+	// if err = cur.All(context.TODO(), &places.Places); err != nil {
+	// 	util.Err(w, err, http.StatusInternalServerError)
+	// 	return 
+	// }
+	fmt.Println(places)
+  for cur.Next(context.TODO()) {
+		var p models.Place
+		if err := cur.Decode(&p); err != nil {
+			util.Err(w, err, http.StatusInternalServerError)
+		  return
+		}
+		if err := cur.Err(); err != nil {
+			util.Err(w, err, http.StatusInternalServerError)
+		  return
+	  }
+		places.Places = append(places.Places, p)
+	}
+	if len(places.Places) == 0 {
+		places.Places = make([]models.Place, 0) //nil slice to empty slice
 	}
 	json.NewEncoder(w).Encode(places)
 }
@@ -193,3 +209,4 @@ func DeletePlace (w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(deletePlace)
 }
+

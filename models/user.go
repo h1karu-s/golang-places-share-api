@@ -34,3 +34,9 @@ type SignUpUser struct {
 	Email   string             `josn:"email"`
 	Token   string             `json:"token"`
 }
+
+//LoginUser ,
+type LoginUser struct {
+	Email string
+	Password string
+}
